@@ -28,7 +28,7 @@ A pre-commit hook that automatically clears output cells from Jupyter notebooks 
   ```yaml
   repos:
     - repo: https://github.com/pcoelho00/pre-commit-clear-notebooks
-      rev: v0.1.0
+      rev: v1.0.0
       hooks:
         - id: clear-notebooks
   ```
