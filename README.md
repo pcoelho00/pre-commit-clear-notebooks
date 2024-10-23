@@ -12,7 +12,6 @@ A pre-commit hook that automatically clears output cells from Jupyter notebooks 
 
 ## Prerequisites
 
-- Python 3.9 or higher
 - `pre-commit` package installed (`pip install pre-commit`)
 - `jq` command-line JSON processor:
   ```bash
