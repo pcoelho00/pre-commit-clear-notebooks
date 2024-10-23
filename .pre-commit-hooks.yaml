@@ -6,4 +6,3 @@
   files: \.ipynb$
   exclude: \.ipynb_checkpoints
   require_serial: true # Process files one at a time
-  additional_dependencies: ['jq']
