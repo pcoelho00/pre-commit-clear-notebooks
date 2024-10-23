@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# Function to check if a file is a Jupyter notebook
+is_notebook() {
+    [[ "${1}" == *.ipynb ]] && [[ ! "${1}" =~ \.ipynb_checkpoints ]]
+}
+
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "Error: jq is not installed. Please install it first."
+    echo "You can install it using:"
+    echo "  - On Ubuntu/Debian: sudo apt-get install jq"
+    exit 1
+fi
+
+# Function to clear notebook outputs
+clear_notebook() {
+    local notebook="$1"
+    local git_add="$2"
+    local temp_file="${notebook}.temp"
+    
+    # Clear outputs while preserving the notebook structure
+    jq '
+        .cells = (.cells | map(
+            if .cell_type == "code" then
+                .outputs = [] |
+                .execution_count = null
+            else
+                .
+            end
+        ))
+    ' "$notebook" > "$temp_file"
+    
+    if [ $? -eq 0 ]; then
+        mv "$temp_file" "$notebook"
+        if [[ $git_add == "add" ]]; then
+            git add "$notebook"  # Re-add the modified file
+        fi
+        echo "Cleared outputs in: $notebook"
+        return 0
+    else
+        rm -f "$temp_file"
+        echo "Error processing: $notebook"
+        return 1
+    fi
+}
+
+failed=0
+
+if [ $# -eq 1 ]; then
+    # Check if the directory exists
+    if [ -f "$1" ]; then
+        if is_notebook "$1"; then
+            clear_notebook "$1"
+        else
+            echo "Error: '$1' is not a Jupyter notebook"
+            failed=1
+        fi
+    elif [ ! -d "$1" ]; then
+        echo "Error: Directory '$1' not found"
+        failed=1
+    else
+        # Find all .ipynb files in the directory and subdirectories
+        echo "Searching for Jupyter notebooks in $1..."
+        found_notebooks=0
+
+        find "$1" -name "*.ipynb" -not -path "*/\.*" | while read notebook; do
+        if [ -f "$notebook" ]; then
+            clear_notebook "$notebook"
+            ((found_notebooks++))
+        fi
+        done
+    fi
+elif [ $# -ne 0 ]; then
+    # Get list of staged notebooks
+
+    staged_notebooks=$(git diff --cached --name-only --diff-filter=ACMR)
+    # Process each staged notebook
+    while IFS= read -r file; do
+        if is_notebook "$file"; then
+            if [ -f "$file" ]; then
+                if ! clear_notebook "$file" "add"; then
+                    echo "Failed to clear outputs in: $file"
+                    failed=1
+                fi
+            fi
+        fi
+    done <<< "$staged_notebooks"
+    exit $failed
+fi
+
+exit $failed

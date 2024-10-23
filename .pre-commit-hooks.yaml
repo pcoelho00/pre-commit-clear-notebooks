@@ -1,0 +1,9 @@
+- id: clear-notebooks
+  name: Clear Jupyter Notebook Outputs
+  description: Clear the output cells of Jupyter notebooks before committing
+  entry: clear-notebooks
+  language: bash
+  files: \.ipynb$
+  exclude: \.ipynb_checkpoints
+  require_serial: true # Process files one at a time
+  additional_dependencies: ['jq']
